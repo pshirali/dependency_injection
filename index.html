@@ -1,0 +1,549 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>Acceptance Test Automation</title>
+		<meta name="description" content="Acceptance Test Automation">
+		<meta name="author" content="Praveen Shirali">
+
+		<link rel="stylesheet" href="css/reveal.css">
+		<link rel="stylesheet" href="css/theme/night.css">
+
+		<!-- Theme used for syntax highlighting of code -->
+		<link rel="stylesheet" href="lib/css/zenburn.css">
+
+		<style type="text/css">
+			.red { color: indianred; }
+			.green { color: yellowgreen; }
+			.blue { color: steelblue; }
+			.peru { color: peru; }
+			.tan { color: tan; }
+			h3.heading { font-size: 120%; }
+			h3.peru { color: peru; text-align: left; }
+			h3.tan { color: tan; text-align: left; }
+			h3.red { color: indianred; text-align: left; }
+		</style>
+
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+				<section>
+					<h3 style="color: khaki">Dependency Injection</h3>
+					<h3 style="color: khaki">In Python</h3>
+					<h3 class="heading" style="color: gray">(using Aglyph framework)</h3>
+					<p style="font-weight: bold; margin-top: 5%; color: peru">Praveen Shirali</p>
+					<p style="font-size: 75%; color: tan;">Test Architect, RiptideIO</p>
+					<p style="font-size: 50%; color: khaki; margin-top:5%">BangPypers MeetUp - December 17th 2016, Bangalore, India.</p>
+				</section>
+				<section>
+					<h3 class="heading">The OOP way: Part 1</h3>
+					<ul>
+						<li class="bullet blue">A class forms the basic building block</li>
+						<li class="bullet blue">Each class has a single responsibility</li>
+						<li class="bullet blue">The class exposes an interface</li>
+					</ul>
+				</section>
+				<section>
+					<h3 class="heading">The OOP way: Part 2</h3>
+					<ul>
+						<li class="bullet blue">Then, there's a class with some higher-level behaviour</li>
+						<li class="bullet blue">This class depends on instances of other lower-level classes</li>
+						<li class="bullet blue">It encapsulates the behavior of lower-level classes.</li>
+						<li class="bullet blue">It has its own responsibility, and its own interface.</li>
+						<li class="bullet blue">Repeat --> At the highest level, you have your application.</li>
+					</ul>
+				</section>
+				<section>
+					<h3 class="peru">A tree of dependencies -- the real world</h3>
+					<pre><code class="hljs" data-trim>
+Car
+ |
+ |----\ Exterior
+ |       |-- Body
+ |       |-- Wheels
+ |       |...
+ |
+ |----\ Interior
+ |       |-- Dashboard
+ |           |-- Steering Assembly
+ |       |...
+ |
+ |----\ EngineBay
+ |       |-- Engine
+ |       |...
+ |
+ |----\ Some other components...
+ ...					</code></pre>
+				</section>
+
+				<section>
+					<h3 class="peru">A tree of dependencies -- software</h3>
+					<pre><code class="hljs" data-trim>
+SomeOOPApplication
+       |
+       |----\ Frontend
+       |       |-- Frontend Dependency 1
+       |       |-- Frontend Dependency 2
+       |       |...
+       |
+       |----\ Server
+       |       |-- Server Dependency 1
+       |           |-- It's dependency ...
+       |       |...
+       |
+       |----\ Database
+       |       |-- DB Dependency 1
+       |       |...
+       |
+       |----\ Some other components...
+       ...					</code></pre>
+				</section>
+
+				<section>
+					<h3 class="red">So, lets build an app...</h3>
+					<pre><code class="hljs" data-trim>
+from app.frontend import Frontend
+from app.server import Server
+from app.database import Database
+
+class RockSolidApplication(object):
+
+	def __init__(self):
+		self.frontend = FrontEnd()
+		self.server = Server()
+		self.database = Database()
+
+	def run(self):
+	    ...
+    ...
+
+if __name__ == "__main__":
+	app = RockSolidApplication()
+	app.run()
+                    </code></pre>
+				</section>
+
+				<section>
+					<h3 class="red">But, what's wrong with it?</h3>
+					<pre><code class="hljs" data-trim>
+from app.frontend import Frontend
+from app.server import Server
+from app.database import Database
+
+class RockSolidApplication(object):   <-- Can't reuse application for something else
+
+	def __init__(self):
+		self.frontend = FrontEnd()    <-- Dependencies are built from within
+		self.server = Server()        <-- Can't introduce other/better deps
+		self.database = Database()    <-- Bring your own deps. Hard to share.
+
+	def run(self):
+	    ...
+    ...
+
+if __name__ == "__main__":
+	app = RockSolidApplication()      <-- Rock solid. Will this float on water?
+	app.run()
+                    </code></pre>
+				</section>
+
+				<section data-transition="zoom">
+					<h2 class="heading">Dependency Injection</h3>
+					<h5 style="color: peru">The process of building dependencies separately and</h5>
+					<h5 style="color: peru">injecting/assembling them into a higher-level product</h5>
+					<h4 class="heading">Think -- assembly line (automobiles)</h3>
+				</section>
+
+				<section>
+					<h3 class="red">A (slightly) better approach</h3>
+					<pre><code class="hljs" data-trim>
+from app.frontend import Frontend
+from app.server import Server
+from app.database import Database
+
+class RockSolidApplication(object):
+
+	def __init__(self, frontend, server, database):
+		self.frontend = frontend
+		self.server = server
+		self.backend = database
+
+	def run(self):
+	    ...
+    ...
+
+if __name__ == "__main__":
+	app = RockSolidApplication(
+		frontend=FrontEnd(),
+		server=Server(),
+		database=Database()
+	)
+	app.run()
+                    </code></pre>
+				</section>
+
+				<section>
+					<h3 class="red">A (slightly) better approach -- How?</h3>
+					<pre><code class="hljs" data-trim>
+from app.frontend import PrettierFrontend
+from app.server import BetterServer
+from app.database import FasterDatabase
+
+class RockSolidApplication(object):
+
+	def __init__(self, frontend, server, database):
+		self.frontend = frontend
+		self.server = server
+		self.backend = database
+
+	def run(self):
+	    ...
+    ...
+
+if __name__ == "__main__":
+	app = RockSolidApplication(
+		frontend=PrettierFrontEnd(),    <-- replace with better components
+		server=BetterServer(),          <-- or replace them with test doubles
+		database=FasterDatabase()       <-- mocks/stubs/etc for testing
+	)
+	app.run()
+                    </code></pre>
+				</section>
+
+				<section>
+					<h3 class="red">A (slightly) better approach -- How?</h3>
+					<pre><code class="hljs" data-trim>
+from app.frontend import PrettierFrontend
+from app.server import BetterServer
+from app.database import FasterDatabase
+from app.base import BaseApplication
+
+class AirborneApplication(BaseApplication):    <-- this can fly!
+    ...
+
+class BuoyantApplication(BaseApplication):     <-- this floats on water
+    ...
+
+class RockSolidApplication(BaseApplication):   <-- this doesnt
+    ...
+
+if __name__ == "__main__":
+	app = BuoyantApplication(
+		frontend=PrettierFrontEnd(mermaids=True),
+		server=BetterServer(food="unlimited", drinks="bottomless"),
+		database=FasterDatabase(i_haz_nos=True)
+	)
+	app.run()
+                    </code></pre>
+				</section>
+
+				<section data-transition="zoom">
+					<h1 class="heading red">BUT</h3>
+					<h5 style="color: peru">There is always a but ...</h5>
+				</section>
+
+				<section>
+					<h3 class="peru">I still have to:</h3>
+					<ul>
+						<li class="bullet">
+							Know dependencies before hand and instantiate them.
+						</li>
+						<li class="bullet">
+							Maintain order. Least dependent go first, and the rest follow.
+						</li>
+						<li class="bullet">
+							Multiple places to update for one change. Hard to track.
+						</li>
+						<li class="bullet">
+							Handle, track, log errors. Much pain.
+						</li>
+					</ul>
+				</section>
+
+				<section data-transition="zoom">
+					<h2 class="heading">Inversion of Control (IoC)</h3>
+					<h5 style="color: peru">Empower a 3rd party to do something for you.</h5>
+					<h5 style="color: peru">Request that 3rd party to assemble what you want.</h5>
+					<h4 class="heading">Think -- Restaurant (with service) = DI using IoC</h3>
+				</section>
+
+				<section>
+					<h3 class="red">Example: The south-indian self-service fast-food restaurant situation..</h3>
+					<pre><code class="hljs" data-trim>
+from darshini.kitchen.steamcooker import Idly
+from darshini.kitchen.wetgrinder import Chutney
+from darshini.kitchen.largebucket import Sambar
+
+from darshini.self_service.counter import Plate, Spoon, Fork, Bowl
+
+from bangalore.citizen import Me
+from datetime import datetime
+
+if __name__ == "__main__":
+
+    one_plate_idly = Plate()
+    one_plate_idly.add(Spoon(), Fork())
+    one_plate_idly.add(Idly(), Idly())
+    one_plate_idly.add(Bowl(Sambar()))
+    one_plate_idly.add(Bowl(Chutney()))
+
+    me = Me() # singleton
+    me.eat(one_plate_idly, at=datetime.now())
+                    </code></pre>
+				</section>
+
+				<section>
+					<h3 class="red">So, I walk into the service wing, and..</h3>
+					<pre><code class="hljs" data-trim>
+from darshini.service_wing import get_waiter
+from darshini.service_wing import Menu
+
+from bangalore.citizen import Me
+from datetime import datetime
+
+if __name__ == "__main__":
+
+    me = Me()               # singleton
+    waiter = get_waiter()   # returns a waiter who is available
+    menu = Menu()
+
+    me.see(menu.page1)
+    idly_plate = me.say(menu.page1.idly_plate, to=waiter)  # blocking call
+    me.eat(idly_plate)
+    assert me.status == "Happy!"
+                    </code></pre>
+				</section>
+
+				<section>
+					<h3 class="green">Deepdive -- Actors</h3>
+					<ul>
+						<li class="bullet">
+							<b style="color: yellowgreen">Client</b>
+							<i style="color: tan; font-weight: italic">That's me -- the customer</i>
+						</li>
+						<li class="bullet">
+							<b style="color: yellowgreen">Assembler</b>
+							<i style="color: tan; font-weight: italic">That's the waiter, chef, etc</i>
+						</li>
+						<li class="bullet">
+							<b style="color: yellowgreen">Context</b>
+							<i style="color: tan; font-weight: italic">Menu+Recipie book</i>
+								<ul>
+									<li><b style="color: yellowgreen">Component</b><i style="color: tan; font-weight: italic"> Menu<->Recipie mapping</i></li>
+									<li><b style="color: yellowgreen">Class/Class.factory</b><i style="color: tan; font-weight: italic"> Recipie</i></li>
+								</ul>
+						</li>
+						<li class="bullet">
+							<b style="color: yellowgreen">Service</b>
+							<i style="color: tan; font-weight: italic">Name of the item on the menu - Example:`Idly - Plate`</i>
+						</li>
+					</ul>
+				</section>
+
+				<section>
+					<h3 class="peru">Workflow - Restaurant:</h3>
+					<ul>
+						<li class="bullet">
+							I look at the menu. Ask waiter to get me an item on the menu.
+						</li>
+						<li class="bullet">
+							Waiter goes to kitchen. Chef prepares it. Waiter brings it. I eat it.
+						</li>
+						<li class="bullet tan">
+							I didn't have to tell the waiter: 1 plate idly = 2 Idly() + 1 Sambar() + 1 Chutney()
+						</li>
+						<li class="bullet tan">
+							All changes make it to the Menu+Recipie book. All customers and staff are on the same page w.r.t changes.
+						</li>
+					</ul>
+				</section>
+
+				<section>
+					<h3 class="peru">Workflow - Application:</h3>
+					<ul>
+						<li class="bullet">
+							A context-file with component-ids mapping to classes is loaded and assembled into a context.
+						</li>
+						<li class="bullet tan">
+							Client requests a `service` from the Assembler/Context
+						</li>
+						<li class="bullet">
+							Assembler/Context/Dispatcher goes through the context, resolves dependencies, inits everything in the correct order.
+						</li>
+						<li class="bullet tan">
+							Client doesn't need care about dependencies. Client gets the requested service and uses it.
+						</li>
+					</ul>
+				</section>
+
+				<section>
+					<h3 class="heading">Python DI+IoC Frameworks</h3>
+					<ul>
+						<li class="bullet tan">
+							<b class="green">Aglyph</b> http://aglyph.readthedocs.io/en/latest/</b>
+						</li>
+						<li class="bullet tan">
+							<b class="green">SpringPython</b> http://springpython.webfactional.com/</b>
+						</li>
+						<li class="bullet">
+							.. probably many more ..
+						</li>
+					</ul>
+				</section>
+
+				<section>
+					<h3 class="green">Aglyph Example: XML Context</h3>
+					<pre><code class="hljs" data-trim>
+<?xml version="1.0" encoding="utf-8"?>
+<context id="my-app-context">
+
+  <component id="frontend" dotted-name="app.frontend.FrontEnd"></component>
+  <component id="server" dotted-name="app.server.Server"></component>
+  <component id="database" dotted-name="app.database.Database"></component>
+
+  <component id="my-app" dotted-name="app.core.Application">
+    <init>
+      <arg keyword="frontend" reference="frontend"></arg>
+      <arg keyword="server" reference="server"></arg>
+      <arg keyword="database" reference="database"></arg>
+    </init>
+  </component>
+
+</context>
+                    </code></pre>
+				</section>
+
+				<section>
+					<h3 class="green">Aglyph Example: Code</h3>
+					<pre><code class="hljs" data-trim>
+from aglyph.context import XMLContext
+from aglyph.asssembler import Assembler
+
+if __name__ == "__main__":
+	context = XMLContext("app-context.xml")
+	assembler = Assembler(context)
+
+	# this will build app.core.Application and inject all 3 dependencies
+	app = assembler.assemble("my-app")
+
+                    </code></pre>
+				</section>
+
+				<section>
+					<h3 class="peru">Aglyph Support</h3>
+					<ul>
+						<li class="bullet">
+							Supports Python 2 and Python 3. Well tested. Excellent Documentation
+						</li>
+						<li class="bullet">
+							Supports both XML config based contexts as well as python API
+						</li>
+						<li class="bullet">
+							Supports Prototype (default), Singleton, Borg, Weakref for all classes.
+						</li>
+						<li class="bullet">
+							Can configure references as well as python native datatypes as args, kwargs.
+						</li>
+						<li class="bullet">
+							... and lots of other features.
+						</li>
+					</ul>
+				</section>
+
+				<section>
+					<h3 class="peru">Advantages</h3>
+					<ul>
+						<li class="bullet">
+							A single place from where you can wire your app and its components
+						</li>
+						<li class="bullet">
+							No need to worry about dependency order during configuration. The framework takes care of it during runtime.
+						</li>
+						<li class="bullet">
+							Lazy initialization. Dependencies are assembled as required, only when required.
+						</li>
+						<li class="bullet">
+							Checks against cycling dependencies.
+						</li>
+						<li class="bullet">
+							Singleton, Borg etc needs not be implemented by a class. Any class can be made to behave like a Singleton etc.
+						</li>
+						<li class="bullet">
+							... and lots of other features.
+						</li>
+					</ul>
+				</section>
+
+				<section data-transition="zoom">
+					<h2 class="heading green">Demo</h2>
+					<img src="stubby.png" width="50%" height="50%"></img>
+					<h4 class="peru">https://github.com/pshirali/stubby</h4>
+				</section>
+
+			<section>
+				<h3 class="tan">Some essential reading</h3>
+				<ul>
+					<li class="bullet">
+						<b style="color: yellowgreen">Dependency Injection by Martin Fowler</b>
+						2004
+						<i style="color: tan; font-weight: italic">http://martinfowler.com/articles/injection.html</i>
+					</li>
+					<li class="bullet">
+						<b style="color: yellowgreen">Python Dependency Injection by Alex Martelli</b>
+						Google, 2008
+						<i style="color: tan; font-weight: italic">http://www.aleax.it/yt_pydi.pdf</i>
+					</li>
+				</ul>
+			</section>
+
+			<section>
+				<h2 class="heading">We are hiring !</h2>
+				<b style="color: peru">Interns and experienced python developers</b><br>
+				<b style="color: yellowgreen">http://riptideio.com/careers/</b>
+                <br><br>
+                <b style="color: indianred; font-size:80%">jobs@riptideio.com</b>
+			</section>
+
+			<section>
+				<h3 class="heading">Q&amp;A, feedback...</h3><br>
+				<b style="color: peru">Praveen Shirali</b><br>
+				<b style="color: tan">praveengshirali@gmail.com</b>
+                <br><br>
+                <b style="color: indianred; font-size:60%">https://pshirali.github.io/dependency_injection/</b>
+			</section>
+
+			</div>
+		</div>
+
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.js"></script>
+
+		<script>
+			// More info https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				history: true,
+				slideNumber: true,
+				transitionSpeed: 'fast',
+				transition: 'convex',
+				// More info https://github.com/hakimel/reveal.js#dependencies
+				dependencies: [
+					{ src: 'plugin/markdown/marked.js' },
+					{ src: 'plugin/markdown/markdown.js' },
+					{ src: 'plugin/notes/notes.js', async: true },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } }
+				]
+			});
+		</script>
+	</body>
+</html>
